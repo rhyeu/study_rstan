@@ -1,0 +1,76 @@
+---
+title: "Chapter 4"
+output: html_document
+number_sections: true
+toc: true
+editor_options:
+  chunk_output_type: consol
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy=T)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(rstan)
+library(ggmcmc)
+```
+
+
+## simple regression
+```{r}
+salary <- read.csv("../code/ch.4/input/data-salary.txt")
+```
+
+```{r}
+plot(salary)
+```
+```{r}
+salary %>% ggplot(aes(x=X, y=Y)) + geom_point()
+```
+
+### model equation
+- standard
+$$\begin{eqnarray}
+Y[n] & = & \mathcal{y}_{base}[n] + \varepsilon [n] \qquad & n = 1,2, \cdots , N \\
+\mathcal{y}_{base}[n] &=& a + b X[n] \quad \quad & n = 1,2, \cdots , N\\
+\varepsilon [n] &\sim& Normal(0, \sigma) \qquad & n = 1,2, \cdots , N
+\end{eqnarray}$$
+
+- simple
+$$\begin{eqnarray}
+\mathcal{y}_{base}[n] & = & a + b X[n] \quad \quad & n = 1,2, \cdots , N\\
+Y [n] &\sim& Normal(\mathcal{y}_{base}[n], \sigma) \qquad & n = 1,2, \cdots , N
+\end{eqnarray}$$
+
+$$\begin{eqnarray}
+\mathcal{y}_{base}[n] &=& a + b X[n] \quad \quad & n = 1,2, \cdots , N\\
+Y [n] &\sim& Normal(\mathcal{y}_{base}[n], \sigma) \qquad & n = 1,2, \cdots , N
+\end{eqnarray}$$
+
+$$\begin{eqnarray}
+Y[n] &\sim& Normal(\mathcal{y}_{base}[n], \sigma) \qquad & n = 1,2, \cdots , N
+\end{eqnarray}$$
+
+
+```{r}
+res_lm = lm(Y~X, data=salary)
+res_lm
+```
+
+```{r}
+data = list(N = nrow(salary), X = salary$X, Y = salary$Y)
+fit = stan(file = "./source/model4-5.stan", data=data, seed=1234)
+
+fit
+```
+
+```{r}
+ggmcmc(ggs(fit, inc_warmup = T, stan_include_auxiliar = T),
+       file = "./output/fit-traceplot.pdf", plot='traceplot')
+
+ggmcmc(ggs(fit), file = "./output/fit-ggmcmc.pdf")
+```
+

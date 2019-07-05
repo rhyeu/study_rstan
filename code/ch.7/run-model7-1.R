@@ -1,0 +1,9 @@
+library(rstan)
+
+d <- read.csv(file='ch.7/input/data-rental.txt')
+colnames(d) <- c('Y', 'X')
+X_new <- seq(from=10, to=120, length=50)
+data <- list(N=nrow(d), Area=d$X, Y=d$Y, N_new=50, Area_new=X_new)
+fit <- stan(file='ch.7/model/model7-1.stan', data=data, seed=1234)
+
+save.image('ch.7/output/result-model7-1.RData')

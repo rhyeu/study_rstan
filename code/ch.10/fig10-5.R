@@ -1,0 +1,45 @@
+library(rstan)
+library(ggplot2)
+
+J <- 150
+A <- seq(-5,5,len=J)
+R1 <- seq(-5,5,len=J)
+data <- list(N=J, M=J, A=A, R1=R1)
+fitm <- stan(file='ch.10/model/model.funnel1.mesh.stan', data=data, seed=1234, iter=10)
+msm <- extract(fitm)
+d.cont <- reshape2::melt(msm$lp[1,,])
+colnames(d.cont) <- c('i', 'j', 'z')
+d.cont <- transform(d.cont, x=R1[i], y=A[j])
+d.cont$z <- ifelse(d.cont$z < -15, -15, d.cont$z)
+
+
+# D <- 1000
+# data <- list(D=D)
+data <- list()
+
+fit1 <- stan(file='ch.10/model/model.funnel1.stan', data=data, seed=123, chains=1, iter=4000)
+ms1 <- rstan::extract(fit1)
+d_mcmc <- data.frame(x=ms1$r[,1], y=ms1$a)
+p <- ggplot()
+p <- p + theme_bw(base_size=18) + theme(legend.position='none')
+p <- p + coord_fixed(ratio=1, xlim=c(-5, 5), ylim=c(-5, 5), expand=FALSE)
+p <- p + geom_tile(data=d.cont, aes(x=x, y=y, z=z, fill=z), alpha=0.8)
+p <- p + geom_contour(data=d.cont, aes(x=x, y=y, z=z, fill=z), colour='black', size=0.3)
+p <- p + geom_point(data=d_mcmc, aes(x=x, y=y), size=0.3, alpha=0.6)
+p <- p + scale_fill_gradient2(low='grey5', mid='white', high='white', limits=c(-15,-1))
+p <- p + labs(x='r[1]', y='a')
+ggsave(p, file='ch.10/output/fig10-5-left.png', dpi=300, w=4, h=4)
+
+
+fit2 <- stan(file='ch.10/model/model.funnel2.stan', data=data, seed=1234, chains=1, iter=4000)
+ms2 <- rstan::extract(fit2)
+d_mcmc2 <- data.frame(x=ms2$r[,1], y=ms2$a)
+p <- ggplot()
+p <- p + theme_bw(base_size=18)
+p <- p + coord_fixed(ratio=1, xlim=c(-5, 5), ylim=c(-5, 5), expand=FALSE)
+p <- p + geom_tile(data=d.cont, aes(x=x, y=y, z=z, fill=z), alpha=0.8)
+p <- p + geom_contour(data=d.cont, aes(x=x, y=y, z=z, fill=z), colour='black', size=0.3)
+p <- p + geom_point(data=d_mcmc2, aes(x=x, y=y), size=0.3, alpha=0.6)
+p <- p + scale_fill_gradient2(low='grey10', mid='white', high='white', limits=c(-15,-1))
+p <- p + labs(x='r[1]', y='a', fill='log p')
+ggsave(p, file='ch.10/output/fig10-5-right.png', dpi=300, w=5, h=4)

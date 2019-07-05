@@ -1,0 +1,39 @@
+library(rstan)
+
+d <- read.csv(file='D:/006966_wonderful2/02. 원고개발/실습/ch.5/data4a.csv')
+d_conv <- data.frame(X=c(0, 1))
+rownames(d_conv) <- c('C', 'T')
+data <- list(I=nrow(d), N=d$N, Y=d$y, X=d$x, F=d_conv[d$f,])
+fit <- stan(file='ex7.stan', data=data, seed=1234)
+
+ms <- rstan::extract(fit)
+
+d_qua <- t(apply(ms$y_pred, 2, quantile, prob=c(0.1, 0.5, 0.9)))
+colnames(d_qua) <- c('p10', 'p50', 'p90')
+d_qua <- data.frame(d, d_qua)
+d_quac <- subset(d_qua, f=="C");
+d_quat <- subset(d_qua, f=="T");
+
+pc <- ggplot(data=d_quac, aes(x=y, y=p50, ymin=p10, ymax=p90, shape=f, color=x, fill=x))
+pc <- pc + coord_fixed(ratio=1, xlim=c(0, 8), ylim=c(0, 8))
+pc <- pc + scale_color_gradientn(colours = rainbow(5))
+pc <- pc + scale_fill_gradientn(colours = rainbow(5))
+pc <- pc + geom_pointrange(size=0.5)
+pc <- pc + geom_abline(aes(slope=1, intercept=0), color='black', alpha=3/5, linetype='31')
+pc <- pc + scale_shape_manual(values=21)
+pc <- pc + labs(x='Observed', y='Predicted')
+
+pt <- ggplot(data=d_quat, aes(x=y, y=p50, ymin=p10, ymax=p90, shape=f, color=x, fill=x))
+pt <- pt + coord_fixed(ratio=1, xlim=c(0, 8), ylim=c(0, 8))
+pt <- pt + scale_color_gradientn(colours = rainbow(5))
+pt <- pt + scale_fill_gradientn(colours = rainbow(5))
+pt <- pt + geom_pointrange(size=0.5)
+pt <- pt + geom_abline(aes(slope=1, intercept=0), color='black', alpha=3/5, linetype='31')
+pt <- pt + scale_shape_manual(values=24)
+pt <- pt + labs(x='Observed', y='Predicted')
+
+g_pc <- ggplotGrob(pc)
+g_pt <- ggplotGrob(pt)
+
+p <- cbind(g_pc, g_pt, size='first')
+ggsave(file='D:/006966_wonderful2/02. 원고개발/실습/ch.5/e/new/fig-ex7.png', plot=p, dpi=300, w=10, h=4)

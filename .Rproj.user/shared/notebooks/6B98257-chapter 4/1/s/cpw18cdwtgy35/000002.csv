@@ -1,0 +1,24 @@
+"0","library(rstan)
+"
+"2","필요한 패키지를 로딩중입니다: StanHeaders
+"
+"2","rstan (Version 2.18.2, GitRev: 2e1f913d3ca3)
+"
+"2","For execution on a local, multicore CPU with excess RAM we recommend calling
+options(mc.cores = parallel::detectCores()).
+To avoid recompilation of unchanged Stan programs, we recommend calling
+rstan_options(auto_write = TRUE)
+"
+"2","For improved execution time, we recommend calling
+Sys.setenv(LOCAL_CPPFLAGS = '-march=native')
+although this causes Stan to throw an error on a few processors.
+"
+"2","
+다음의 패키지를 부착합니다: ‘rstan’
+
+"
+"2","The following object is masked from ‘package:tidyr’:
+
+    extract
+
+"
