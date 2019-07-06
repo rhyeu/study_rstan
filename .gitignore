@@ -1,4 +1,3 @@
 *.zip
 *.Rdata
-/Rproj.user
-.Rproj.user
+.Rproj.user/
