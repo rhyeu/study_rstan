@@ -1,0 +1,17 @@
+
+data {
+  int N;
+  real X;
+  real Y;
+}
+
+parameters {
+  real a;
+  real b;
+  real<lower=0> sigma;
+}
+
+model {
+  Y[n] ~ normal(mu, sigma);
+}
+
