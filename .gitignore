@@ -1,5 +1,3 @@
 *.zip
 *.Rdata
-Rproj.user/
-.Rproj.user
-.Rpoj.user/
+study_rstan.Rproj
