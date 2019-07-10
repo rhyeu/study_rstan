@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, tidy=T)
 ```
 
 ```{r}
+library(here)
 library(tidyverse)
 library(ggplot2)
 library(rstan)
@@ -21,12 +22,13 @@ library(ggmcmc)
 
 ## simple regression
 ```{r}
-salary <- read.csv("../code/ch.4/input/data-salary.txt")
+salary <- read.csv(here("code","ch.4", "input","data-salary.txt"),)
 ```
 
 ```{r}
 plot(salary)
 ```
+
 ```{r}
 salary %>% ggplot(aes(x=X, y=Y)) + geom_point()
 ```
@@ -60,9 +62,10 @@ res_lm = lm(Y~X, data=salary)
 res_lm
 ```
 
-```{r}
+```{r, echo=F}
 data = list(N = nrow(salary), X = salary$X, Y = salary$Y)
-fit = stan(file = "../source/model4-5.stan", data=data, seed=1234)
+
+fit = stan(file = "./model4-5.stan", data=data, seed=1234)
 ```
 
 ```{r}
@@ -72,9 +75,9 @@ fit
 
 ```{r}
 ggmcmc(ggs(fit, inc_warmup = T, stan_include_auxiliar = T),
-       file = "../output/fit-traceplot.pdf", plot='traceplot')
+       file = here("output", "fit-traceplot.pdf"), plot='traceplot')
 
-ggmcmc(ggs(fit), file = "../output/fit-ggmcmc.pdf")
+ggmcmc(ggs(fit), file = here("output", "fit-ggmcmc.pdf"))
 ```
 
 ## option in MCMC
@@ -96,7 +99,6 @@ fit_option = sampling(
 )
 
 summary(fit_option)
-?sampling
 ```
 
 ## to compute the chain with multi-cores
@@ -151,18 +153,18 @@ customize.ggplot.axis = function(p){
   return(p)
   
 }
-
+# 
 d_est = data.frame.quantile.mcmc(x = X_new, y_mcmc = ms_new$y_base_new)
 p = ggplot.5quantile(data=d_est)
-p = p + geom_point(data=d, aes(x=X, y=Y), shape = 1, size = 3) 
-p = p + customize.ggplot.axis(p)
-ggsave(file = "./output/fig4-8-left-2.png", plot = p, dpi = 300, w=4, h=3)
+p = p + geom_point(data=salary, aes(x=X, y=Y), shape = 1, size = 3)
+# p = p + customize.ggplot.axis(p)
+# ggsave(file = "./output/fig4-8-left-2.png", plot = p, dpi = 300, w=4, h=3)
 
 d_est = data.frame.quantile.mcmc(x = X_new, y_mcmc = ms_new$y_new)
-p = ggplot.5quantile(data=d_est) 
-p = p + geom_point(data=d, aes(x=X, y=Y), shape = 1, size = 3) 
-p = p + customize.ggplot.axis(p)
-ggsave(file = "./output/fig4-8-right-2.png", plot = p, dpi = 300, w=4, h=3)
+p = ggplot.5quantile(data=d_est)
+p = p + geom_point(data=salary, aes(x=X, y=Y), shape = 1, size = 3)
+# p = p + customize.ggplot.axis(p)
+# ggsave(file = "./output/fig4-8-right-2.png", plot = p, dpi = 300, w=4, h=3)
   
 ```
 

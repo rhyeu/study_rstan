@@ -1,0 +1,78 @@
+---
+title: "chapter 5"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(rstan)
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(here)
+library(ggmcmc)
+```
+
+
+```{r}
+attend <- read.csv(here("code/ch.5/input/data-attendance-1.txt"))
+## A : satisfied with a part-time job
+## Score : the score how much interested with in a study
+## Y : the attendance rate for a year.
+```
+
+```{r}
+ggpairs(attend) 
+```
+
+## fit a multivariate regression model
+```{r}
+data = list(N = nrow(attend), 
+            A = attend$A, 
+            Score = attend$Score/200, # scaling for a converge
+            Y = attend$Y)
+
+fit = stan(file = here("source", "chpt 5", "model5-3.stan"),
+           data = data,
+           seed = 1234)
+
+save.image(here("output", "chpt5", "result-model5-3.RData"))
+```
+
+```{r}
+fit
+```
+
+```{r}
+ggmcmc(ggs(fit), file = here("output/chpt5", "fit-ggmcmc.pdf"))
+
+```
+
+## binary logistic regression
+
+```{r}
+d <- read.csv(here("code/ch.5/input/data-attendance-2.txt"))
+## PersonID : students ID
+## M : total number of classes that enrolled as a 3-month course.
+## Y : a number of Attendance actually
+str(d)
+```
+
+```{r}
+data = list(PersonID = nrow(d),
+            )
+```
+
+data = list(N = nrow(attend), 
+            A = attend$A, 
+            Score = attend$Score/200, # scaling for a converge
+            Y = attend$Y)
+
+fit = stan(file = here("source", "chpt 5", "model5-3.stan"),
+           data = data,
+           seed = 1234)
+
+save.image(here("output", "chpt5", "result-model5-3.RData"))
