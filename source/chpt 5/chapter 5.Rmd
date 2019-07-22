@@ -84,3 +84,27 @@ save.image(here("output", "chpt5", "result-model5-4.RData"))
 ```{r}
 ggmcmc(ggs(fit), file = here("output/chpt5", "fit-ggmcmc2.pdf"))
 ```
+
+
+#### logistic regression
+```{r}
+d <- read.csv(here("code/ch.5/input/data-attendance-3.txt"))
+str(d)
+
+## PersonID : students ID
+## Y : Attendance actually: 0 - absent / 1 - present
+## A : satisfied with a part-time job
+## Score : the score how much interested with in a study
+## Weather : A : sunny, B : cloudy, C : rainy
+```
+
+```{r}
+aggregate(Y~Weather, data=d, FUN = table)
+```
+
+
+```{r}
+data = list(
+)
+```
+
