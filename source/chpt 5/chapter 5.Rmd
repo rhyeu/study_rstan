@@ -58,21 +58,29 @@ d <- read.csv(here("code/ch.5/input/data-attendance-2.txt"))
 ## PersonID : students ID
 ## M : total number of classes that enrolled as a 3-month course.
 ## Y : a number of Attendance actually
+## A : satisfied with a part-time job
+## Score : the score how much interested with in a study
 str(d)
 ```
 
 ```{r}
-data = list(PersonID = nrow(d),
-            )
+data = list(N = nrow(d),
+            A = d$A,
+            M = d$M,
+            Score = d$Score/200, 
+            Y = d$Y)
+fit = stan(file=here("source", "chpt 5", "model5-4.stan"),
+           data = data, seed = 1234)
 ```
 
-data = list(N = nrow(attend), 
-            A = attend$A, 
-            Score = attend$Score/200, # scaling for a converge
-            Y = attend$Y)
+```{r}
+fit
+```
 
-fit = stan(file = here("source", "chpt 5", "model5-3.stan"),
-           data = data,
-           seed = 1234)
+```{r}
+save.image(here("output", "chpt5", "result-model5-4.RData"))
+```
 
-save.image(here("output", "chpt5", "result-model5-3.RData"))
+```{r}
+ggmcmc(ggs(fit), file = here("output/chpt5", "fit-ggmcmc2.pdf"))
+```
