@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(rstan)
-options(mc.cores = parallel::detectCores()-1)
+options(mc.cores = parallel::detectCores()-1) ## for parallel computing 
 library(tidyverse)
 library(ggplot2)
 library(GGally)
