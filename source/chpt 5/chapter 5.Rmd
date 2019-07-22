@@ -9,6 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(rstan)
+options(mc.cores = parallel::detectCores()-1)
 library(tidyverse)
 library(ggplot2)
 library(GGally)
@@ -99,12 +100,59 @@ str(d)
 ```
 
 ```{r}
-aggregate(Y~Weather, data=d, FUN = table)
+table(d$Weather, d$Y)
 ```
 
 
 ```{r}
-data = list(
+conv = c(0, 0.2, 1)
+
+names(conv) = c("A", "B", "C")
+
+data = list( 
+  I = nrow(d),
+  Score = d$Score/200,
+  A = d$A,
+  W = conv[d$Weather],
+  Y = d$Y
 )
+
+fit = stan(file = here("source/chpt 5/model5-5b.stan"),
+           data = data,
+           seed = 1234)
+```
+```{r}
+fit
+ggmcmc(ggs(fit),here("output/chpt5/fit-ggmcmc3.pdf"))
+```
+
+#### Poisson regression
+
+```{r}
+d <- read.csv(here("code/ch.5/input/data-attendance-2.txt"))
+## PersonID : students ID
+## M : total number of classes that enrolled as a 3-month course.
+## Y : a number of Attendance actually
+## A : satisfied with a part-time job
+## Score : the score how much interested with in a study
+str(d)
+```
+
+```{r}
+data = list(
+  N = nrow(d),
+  A = d$A,
+  Score = d$Score/200,
+  M = d$M,
+  Y = d$Y
+)
+
+fit = stan(file = here("source/chpt 5/model5-6b.stan"),
+           data=data,
+           seed = 1234)
+
+```
+```{r}
+fit
 ```
 
