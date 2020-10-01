@@ -1,0 +1,125 @@
+---
+title: "chpt4. R과 RStan 시작하기"
+author: "류성균"
+date: '2020 10 1 '
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
+
+```{r}
+library(tidyverse)
+library(here)
+library(xaringan)
+
+dir <- here()
+
+# xaringan:::inf_mr()
+```
+
+
+## 4.2 Stan의 기본적인 문법
+
+```
+- data { 
+  데이터 y 선언
+}
+
+- parameters {
+  표본을 추출하고 싶은 parameter \theta 선언
+}
+
+- model {
+  likelihood p(Y|\theta) 기술
+  prior p(\theta) 기술
+}
+
+```
+
+### 4.2.2 문법 기초
+
+- 모델
+$$
+\begin{eqnarray}
+Y[n] &\sim& N (\mu, 1) ~~~~~~~~~~~~~~~~~~~ n = 1, \cdots, N \\
+\mu &\sim& N(0, 100)
+\end{eqnarray}
+$$
+
+
+- R 하드코딩
+
+```{r}
+N = 20
+mu = rnorm(N, mean = 0, sd = 10^2)
+Y = rnorm(N, mean = mu, sd = 1)
+
+ggplot() + 
+  geom_histogram(aes(x = Y)) +
+  ggtitle("histogram of Y")
+```
+
+
+- stan code
+
+```
+data {
+  int N;
+  real Y[N];
+}
+
+parameters {
+  real mu;
+}
+
+model {
+  for (n in 1:N) {
+    Y[n] ~ normal(mu, 1);
+  }
+  mu ~ normal(0, 100);
+}
+```
+## 4.3 Stan의 lp__와 target
+
+
+
+
+## 4.4 단회귀
+
+### 4.4.2 데이터 분포 확인
+
+```{r}
+here()
+salary <- read.table(file = here("code/ch.4/input/data-salary.txt"), header = T, sep = ',')
+glimpse(salary)
+
+```
+
+```{r}
+ggplot(data = salary) + 
+  geom_point(aes(x = X, y = Y)) +
+  ggtitle("scatter plot for salary data")
+```
+
+
+### 4.4.3. 모델식 기술
+
+$$
+\begin{eqnarray}
+Y[n] &=& y_{base}[n] + \varepsilon[n] ~~~~~~~~~~ &n = 1,2,\cdots , N \\
+y_{base}[n] &=& a + bX[n] ~~~~~~~~~~ &n = 1,2,\cdots , N \\
+\varepsilon[n] &\sim& N(0, \sigma) ~~~~~~~~~~ &n = 1,2,\cdots , N
+\end{eqnarray}
+$$
+
+$N$ : 사람 수 
+$Y[n]$ : 연봉
+$Y_{base}$ : 기본 연봉
+$X[n]$ : 나이
+
+- 위의 식은 아래와 같이 표현도 가능하다.
+
+$$\begin{eqnarray}
+Y[n] &=& a + b X[n] + \varepsilon[n] ~~~~~~~~~~ &n = 1,2,\cdots , N \\
+\varepsilon[n] &\sim& N(0, \sigma) ~~~~~~~~~~ &n = 1,2,\cdots , N
+\end{eqnarray}$$

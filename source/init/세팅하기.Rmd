@@ -1,0 +1,11 @@
+---
+title: "Rstan 시작하기"
+author: "류성균"
+date: '2020 10 1 '
+output: html_document
+---
+
+```{r}
+update.packages('rstan')
+```
+
