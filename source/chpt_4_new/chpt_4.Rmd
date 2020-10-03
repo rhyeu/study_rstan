@@ -11,10 +11,12 @@ editor_options:
 library(tidyverse)
 library(here)
 library(xaringan)
-
-dir <- here()
-
+library(rstan)
+library(parallel)
+library("ggmcmc")
+library("ggExtra") # for bivariate plot
 # xaringan:::inf_mr()
+
 ```
 
 
@@ -50,6 +52,7 @@ $$
 - R 하드코딩
 
 ```{r}
+set.seed(1234)
 N = 20
 mu = rnorm(N, mean = 0, sd = 10^2)
 Y = rnorm(N, mean = mu, sd = 1)
@@ -90,14 +93,14 @@ model {
 
 ```{r}
 here()
-salary <- read.table(file = here("code/ch.4/input/data-salary.txt"), header = T, sep = ',')
+salary <- read.csv(file = here("code/ch.4/input/data-salary.txt"), header = T)
 glimpse(salary)
 
 ```
 
 ```{r}
-ggplot(data = salary) + 
-  geom_point(aes(x = X, y = Y)) +
+ggplot(data = salary, aes(x = X, y = Y)) +
+  geom_point() +
   ggtitle("scatter plot for salary data")
 ```
 
@@ -112,10 +115,7 @@ y_{base}[n] &=& a + bX[n] ~~~~~~~~~~ &n = 1,2,\cdots , N \\
 \end{eqnarray}
 $$
 
-$N$ : 사람 수 
-$Y[n]$ : 연봉
-$Y_{base}$ : 기본 연봉
-$X[n]$ : 나이
+- $N$ : 사람 수 / $Y[n]$ : 연봉 / $Y_{base}$ : 기본 연봉 / $X[n]$ : 나이
 
 - 위의 식은 아래와 같이 표현도 가능하다.
 
@@ -123,3 +123,205 @@ $$\begin{eqnarray}
 Y[n] &=& a + b X[n] + \varepsilon[n] ~~~~~~~~~~ &n = 1,2,\cdots , N \\
 \varepsilon[n] &\sim& N(0, \sigma) ~~~~~~~~~~ &n = 1,2,\cdots , N
 \end{eqnarray}$$
+
+또는 
+$$\begin{eqnarray}
+y_{base}[n] &=& a + bX[n] ~~~~~~~~~~ &n = 1,2,\cdots , N \\
+Y[n] &\sim& N(y_{base}[n], \sigma) ~~~~~~~~~~ &n = 1,2,\cdots , N \\
+\end{eqnarray}$$
+
+혹은
+
+$$\begin{eqnarray}
+Y[n] &\sim& N(a + bX[n], \sigma) ~~~~~~~~~~ &n = 1,2,\cdots , N \\
+\end{eqnarray}$$
+
+### 4.4.4 R의 lm 함수 추정 (기존 회귀분석)
+
+```{r}
+(res_lm <- lm(Y~X, data = salary))
+```
+
+```{r}
+ggplot(data = salary, aes(x = X, y = Y)) +
+  geom_point() +
+  ggtitle("Confidence Interval for salary data") +
+  stat_smooth(method = lm, level = 0.95)
+```
+
+
+- 다른 설명변수 범위에 대해서도 신뢰구간과 예측구간을 그려보자
+```{r}
+X_new <- data.frame(X = 23:60)
+conf_95 <- predict(res_lm, newdata = X_new, interval = "confidence", level = 0.95)
+pred_95 <- predict(res_lm, newdata = X_new, interval = "prediction", level = 0.95)
+
+new_data <- cbind(X_new, pred_95)
+```
+
+
+```{r}
+ggplot(data = salary, aes(x = X, y = Y)) +
+  geom_point() +
+  ggtitle("Prediction Interval for salary data") +
+  stat_smooth(method = lm, level = 0.95) +
+  geom_line(data = new_data, aes(x = X, y = lwr), color = 'red', linetype = "dashed") + 
+  geom_line(data = new_data, aes(x = X, y = upr), color = 'red', linetype = "dashed")
+```
+
+
+### 4.4.5 Stan으로 구현
+
+
+```{r}
+salary_list = list(N = nrow(salary),
+                   X = salary$X,
+                   Y = salary$Y)
+
+fit <- stan(file = here("source/chpt_4_new/model 4-5.stan"), data = salary_list, seed =  1234)
+
+save.image(file = here("output/chpt_4_new.result-model-4-5.Rdata"))
+```
+
+
+- Rmarkdown을 잘 사용한다면 markdown을 knit할 때 활용할 수도 있긴 한데... 굳이 쓸 이유가 있을까 싶다...
+```{stan, output.var="model4_5"}
+data {
+  int N;
+  real X[N];
+  real Y[N];
+}
+
+
+parameters {
+  real a;
+  real b;
+  real<lower=0> sigma;
+}
+
+model {
+  for (n in 1:N){
+    Y[n] ~ normal(a+b*X[n], sigma);
+  }
+}
+```
+
+
+```{r}
+fit_rmd <- sampling(model4_5,
+         data = salary_list, seed = 1234)
+
+save(fit_rmd, file = here("output/chpt_4_new.result-model-4-5-rmd.Rdata"))
+```
+
+
+### 4.4.7 RStan 결과를 보는 방법
+```{r}
+print(fit)
+```
+
+
+### 수렴 진단을 파일로 출력
+
+```{r}
+summary(fit)$summary
+
+```
+
+```{r}
+ggs_traceplot(ggs(fit), 
+            greek = T)
+```
+
+```{r}
+
+ggs_density(ggs(fit), #%>% filter(Chain == 1),
+            hpd = T,
+            greek = T)
+```
+
+```{r}
+ggs_running(ggs(fit),
+            greek = T)
+```
+
+```{r}
+ggs_autocorrelation(ggs(fit),            nLags = 30,
+                    greek = T)
+```
+
+
+### 4.4.9 MCMC 설정 변경
+```{r}
+stanmodel <- stan_model(file = here("source/chpt_4_new/model 4-5.stan"))
+
+fit <- sampling(
+  stanmodel,
+  data = salary_list,
+  #pars = c('b', 'sigma'),
+  init = function() {
+    list(a = runif(1, -10, 10), b = runif(1, 0, 10), sigma = 10) # 초기값을 설정하지 않으면 unif(-2,2)에서 생성
+  },
+  seed = 123,
+  chains = 3, warmup = 200,
+  thin = 2
+
+)
+```
+
+### 4.4.10 병렬 계산 실행 방법
+```{r}
+rstan_options(auto_write = T) # 컴파일을 반복하지 않도록 모델 파일을 하드디스크에 저장
+options(mc.cores = parallel::detectCores() - 1) # chain을 병렬로 계산
+
+```
+
+### 4.4.11 베이즈 신뢰 구간과 베이즈 예측 구간 계산
+- 각 parameters의 샘플링값 추출
+```{r}
+ms <- rstan::extract(fit
+                     # , permuted = F # 이렇게 하면 chain을 구분할 수 있음
+                     )
+```
+
+```{r}
+head(ms$b)
+quantile(ms$b, probs = c(0.025, 0.975))
+```
+
+```{r}
+salary_mcmc <- data.frame(a = ms$a,
+                          b = ms$b,
+                          sigma = ms$sigma)
+
+head(salary_mcmc)
+```
+
+```{r}
+
+p <- ggplot(aes(x = a, y = b), data = salary_mcmc) +
+  geom_point()
+ggMarginal(p, type = "histogram")
+```
+
+
+- 50세인 사람의 기본 연봉 분포와 연봉의 예측분포를 생성
+```{r}
+N_mcmc <- length(ms$lp__)
+y50_base <- ms$a + ms$b*50
+y50 <- rnorm(n = N_mcmc, mean = y50_base, sd = ms$sigma)
+salary50_mcmc <- data.frame(a = ms$a, b = ms$b, sigma = ms$sigma,
+                            y50_base, y50)
+```
+
+```{r}
+head(salary50_mcmc)
+```
+
+
+```{r}
+ggplot(data = salary, aes(x = X, y = Y)) +
+  geom_point() + 
+  geom_abline(intercept = mean(salary50_mcmc$a), slope = mean(salary50_mcmc$b), color = "blue", size =2 )
+```
+
