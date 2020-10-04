@@ -325,3 +325,65 @@ ggplot(data = salary, aes(x = X, y = Y)) +
   geom_abline(intercept = mean(salary50_mcmc$a), slope = mean(salary50_mcmc$b), color = "blue", size =2 )
 ```
 
+### 4.4.12 transfromed parameters 블록과 generated quantities 블록
+
+#### data preparation
+```{r}
+library(rstan)
+here()
+salary <- read.csv(file = here("code/ch.4/input/data-salary.txt"), header = T)
+
+X_new <- 23:60
+salary_new_list <- list(
+  N = nrow(salary),
+  X = salary$X,
+  Y = salary$Y,
+  N_new = length(X_new),
+  X_new = X_new
+)
+fit <- stan(file = here("source/chpt_4_new/model 4-4.stan"), 
+            data = salary_new_list, seed = 1234)
+```
+
+#### visualization
+```{r}
+ms <- rstan::extract(fit)
+data.frame.qauntile.mcmc <- function(x, y_mcmc,
+                                     probs = c(2.5, 25, 50, 75, 97.5)/100) {
+  qua <- apply(y_mcmc, 2, quantile, probs = probs)
+  d <- data.frame(X = x, t(qua))
+  colnames(d) <- c('X', paste0('p', probs*100))
+  return(d)
+}
+
+ggplot.5quantile <- function(data){
+  p <- ggplot(data = data, aes(x=X, y=p50)) 
+  p <- p + theme_bw(base_size = 18)
+  p <- p + geom_ribbon(aes(ymin = p2.5, ymax = p97.5), fill = 'black', alpha = 1/6)
+  p <- p + geom_ribbon(aes(ymin = p25, ymax = p75), fill = 'black', alpha = 2/6)
+  p <- p + geom_line(size = 1)
+  return(p)
+}
+
+customize.ggplot.axis <- function(p) {
+  p <- p + labs(x = 'X', y = 'Y')
+  p <- p + scale_y_continuous(breaks = seq(from = 2000, to = 14000, by = 4000))
+  p <- p + coord_cartesian(xlim = c(22, 61), ylim = c(2000, 14000))
+  return(p)
+}
+
+```
+
+```{r}
+salary_est <- data.frame.qauntile.mcmc(x = X_new, y_mcmc = ms$y_base_new)
+p <- ggplot.5quantile(data = salary_est)
+p <- p + geom_point(data = salary, aes(x = X, y = Y), shape = 1, size = 3)
+p <- customize.ggplot.axis(p)
+# ggsave(file = here("output/chpt_4_new/fig4-8-right-2.png"), plot = p, dpi = 300, w = 4, h = 3)
+```
+
+
+```{r}
+head(ms$y_new[,1:4])
+```
+
